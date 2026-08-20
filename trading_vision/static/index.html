@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Trading Vision — Freqtrade Dashboard</title>
+    <meta name="description" content="Premium Hybrid-Dashboard für Freqtrade Trading Bots." />
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        bg: '#303030',
+                        sidebar: '#1a1a1a',
+                        card: '#303030',
+                        surface: '#383838',
+                        border: '#404040',
+                        textPri: '#f0f0f0',
+                        textSec: '#9ca3af',
+                        textDim: '#6b7280',
+                        green: '#36b37e',
+                        greenBg: 'rgba(54,179,126,0.12)',
+                        red: '#ff5c5c',
+                        redBg: 'rgba(255,92,92,0.12)',
+                        blue: '#4c9aff',
+                        blueBg: 'rgba(76,154,255,0.10)',
+                        amber: '#ffab00',
+                        amberBg: 'rgba(255,171,0,0.12)',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'SF Mono', 'monospace'],
+                    },
+                },
+            },
+        }
+    </script>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet" />
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: #262626;
+            color: #f0f0f0;
+            font-family: 'Inter', system-ui, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #404040;
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+        /* Sidebar nav item */
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            color: #9ca3af;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            user-select: none;
+        }
+
+        .nav-item:hover {
+            background: #2a2a2a;
+            color: #d1d5db;
+        }
+
+        .nav-item.active {
+            background: #36b37e;
+            color: #fff;
+        }
+
+        /* Card */
+        .card {
+            background: #303030;
+            border: 1px solid #404040;
+            border-radius: 10px;
+        }
+
+        /* Stat card top accent bar */
+        .stat-accent {
+            height: 3px;
+            border-radius: 10px 10px 0 0;
+        }
+
+        /* Progress bar */
+        .prog-track {
+            background: #404040;
+            height: 4px;
+            border-radius: 99px;
+            overflow: hidden;
+        }
+
+        .prog-fill {
+            height: 100%;
+            border-radius: 99px;
+            background: #36b37e;
+            transition: width 0.6s ease;
+        }
+
+        /* Table */
+        .tv-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .tv-table th {
+            text-align: left;
+            padding: 10px 16px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #6b7280;
+            border-bottom: 1px solid #404040;
+        }
+
+        .tv-table td {
+            padding: 12px 16px;
+            font-size: 13px;
+            border-bottom: 1px solid #353535;
+            vertical-align: middle;
+        }
+
+        .tv-table tbody tr {
+            transition: background 0.1s ease;
+        }
+
+        .tv-table tbody tr:hover {
+            background: #353535;
+        }
+
+        .tv-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Badge */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 10px;
+            border-radius: 99px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        /* Pulse */
+        @keyframes softPulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: .45;
+            }
+        }
+
+        .pulse {
+            animation: softPulse 2.5s ease-in-out infinite;
+        }
+
+        /* Fade in */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(6px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.25s ease-out both;
+        }
+
+        /* Skeleton */
+        @keyframes shimmer {
+            0% {
+                background-position: -200% 0;
+            }
+
+            100% {
+                background-position: 200% 0;
+            }
+        }
+
+        .skeleton {
+            background: linear-gradient(90deg, #353535 25%, #404040 50%, #353535 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.4s infinite;
+            border-radius: 6px;
+        }
+
+        /* Thought line */
+        .thought-line {
+            position: relative;
+            padding-left: 20px;
+            margin-bottom: 8px;
+        }
+
+        .thought-line::before {
+            content: '';
+            position: absolute;
+            left: 5px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #404040;
+        }
+
+        .thought-line::after {
+            content: '';
+            position: absolute;
+            left: 2px;
+            top: 7px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #4c9aff;
+        }
+
+        /* Heat bar */
+        .heat-bar {
+            height: 6px;
+            border-radius: 99px;
+            background: #404040;
+            overflow: hidden;
+        }
+
+        .heat-fill {
+            height: 100%;
+            border-radius: 99px;
+            transition: width 0.5s ease;
+        }
+
+        .heat-cold {
+            background: #4c9aff;
+        }
+
+        .heat-warm {
+            background: #ffab00;
+        }
+
+        .heat-hot {
+            background: #ff6b6b;
+        }
+
+        /* Scanning animation */
+        @keyframes sweep {
+            0% {
+                transform: translateX(-100%);
+            }
+
+            100% {
+                transform: translateX(400%);
+            }
+        }
+
+        .scan-sweep {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 25%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(54, 179, 126, 0.15), transparent);
+            animation: sweep 2s ease-in-out infinite;
+        }
+
+        /* Mobile sidebar toggle */
+        @media (max-width: 768px) {
+            .sidebar-overlay {
+                position: fixed;
+                inset: 0;
+                background: rgba(0, 0, 0, .5);
+                z-index: 40;
+            }
+        }
+    </style>
+</head>
+
+<body x-data="app()" x-init="init()">
+    <div class="flex h-screen">
+
+        <!-- ============================================================ -->
+        <!-- SIDEBAR -->
+        <!-- ============================================================ -->
+        <!-- Mobile overlay -->
+        <div class="sidebar-overlay md:hidden" x-show="sidebarOpen" @click="sidebarOpen = false"
+            x-transition:enter="transition-opacity duration-200" x-transition:enter-start="opacity-0"
+            x-transition:leave="transition-opacity duration-200" x-transition:leave-end="opacity-0"></div>
+
+        <aside
+            class="fixed md:sticky top-0 left-0 z-50 h-screen w-[220px] bg-sidebar flex flex-col border-r border-border overflow-y-auto shrink-0 transition-transform duration-200"
+            :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'">
+
+            <!-- Brand -->
+            <div class="flex items-center gap-3 px-5 h-[60px] border-b border-border shrink-0">
+                <div class="w-7 h-7 rounded-md bg-green flex items-center justify-center">
+                    <i data-lucide="activity" class="w-4 h-4 text-white"></i>
+                </div>
+                <span class="text-[15px] font-semibold tracking-tight text-textPri">
+                    Trading<span class="text-green">Vision</span>
+                </span>
+            </div>
+
+            <!-- Navigation -->
+            <nav class="flex-1 px-3 py-4 space-y-1">
+                <div class="nav-item" :class="tab === 'focus' && 'active'" @click="tab = 'focus'; sidebarOpen = false">
+                    <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+                    <span>Dashboard</span>
+                </div>
+                <div class="nav-item" :class="tab === 'mind' && 'active'" @click="tab = 'mind'; sidebarOpen = false">
+                    <i data-lucide="brain" class="w-4 h-4"></i>
+                    <span>The Mind</span>
+                </div>
+                <div class="nav-item" :class="tab === 'health' && 'active'"
+                    @click="tab = 'health'; sidebarOpen = false">
+                    <i data-lucide="heart-pulse" class="w-4 h-4"></i>
+                    <span>Quick Health</span>
+                </div>
+            </nav>
+
+            <!-- Sidebar footer -->
+            <div class="px-4 py-4 border-t border-border text-[11px] text-textDim space-y-2">
+                <div class="flex items-center justify-between">
+                    <span>Status</span>
+                    <span class="flex items-center gap-1.5" :class="botOnline ? 'text-green' : 'text-red'">
+                        <span class="w-1.5 h-1.5 rounded-full pulse" :class="botOnline ? 'bg-green' : 'bg-red'"></span>
+                        <span x-text="botOnline ? 'Online' : 'Offline'"></span>
+                    </span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span>Version</span>
+                    <span>v1.0</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- ============================================================ -->
+        <!-- MAIN CONTENT -->
+        <!-- ============================================================ -->
+        <div class="flex-1 flex flex-col min-w-0">
+
+            <!-- Top bar -->
+            <header class="h-[60px] bg-sidebar border-b border-border flex items-center justify-between px-5 shrink-0">
+                <div class="flex items-center gap-3">
+                    <!-- Mobile hamburger -->
+                    <button class="md:hidden p-1.5 rounded-md hover:bg-surface" @click="sidebarOpen = !sidebarOpen">
+                        <i data-lucide="menu" class="w-5 h-5 text-textSec"></i>
+                    </button>
+                    <div>
+                        <h1 class="text-[15px] font-semibold text-textPri"
+                            x-text="tab === 'focus' ? 'Dashboard' : tab === 'mind' ? 'The Mind' : 'Quick Health'"></h1>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <!-- Bot status pill -->
+                    <div class="badge" :class="botOnline ? 'bg-greenBg text-green' : 'bg-redBg text-red'">
+                        <span class="w-1.5 h-1.5 rounded-full pulse" :class="botOnline ? 'bg-green' : 'bg-red'"></span>
+                        <span x-text="botOnline ? 'Bot Online' : 'Bot Offline'"></span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Content area -->
+            <main class="flex-1 overflow-y-auto p-5 lg:p-7">
+
+                <!-- ========== FOCUS DASHBOARD ========== -->
+                <section x-show="tab === 'focus'" x-transition class="fade-in">
+
+                    <!-- Stat Cards Row -->
+                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                        <!-- Active Trades -->
+                        <div class="card overflow-hidden">
+                            <div class="stat-accent bg-green"></div>
+                            <div class="p-4">
+                                <div class="flex items-center gap-2 mb-3">
+                                    <div class="w-8 h-8 rounded-lg bg-greenBg flex items-center justify-center">
+                                        <i data-lucide="trending-up" class="w-4 h-4 text-green"></i>
+                                    </div>
+                                    <span class="text-[11px] font-medium text-textDim uppercase tracking-wider">Aktive
+                                        Trades</span>
+                                </div>
+                                <p class="text-2xl font-bold text-textPri" x-text="trades.length">0</p>
+                            </div>
+                        </div>
+
+                        <!-- Total P&L -->
+                        <div class="card overflow-hidden">
+                            <div class="stat-accent" :class="totalPnl >= 0 ? 'bg-green' : 'bg-red'"></div>
+                            <div class="p-4">
+                                <div class="flex items-center gap-2 mb-3">
+                                    <div class="w-8 h-8 rounded-lg flex items-center justify-center"
+                                        :class="totalPnl >= 0 ? 'bg-greenBg' : 'bg-redBg'">
+                                        <i data-lucide="wallet" class="w-4 h-4"
+                                            :class="totalPnl >= 0 ? 'text-green' : 'text-red'"></i>
+                                    </div>
+                                    <span class="text-[11px] font-medium text-textDim uppercase tracking-wider">Gesamt
+                                        P&L</span>
+                                </div>
+                                <p class="text-2xl font-bold font-mono"
+                                    :class="totalPnl >= 0 ? 'text-green' : 'text-red'"
+                                    x-text="(totalPnl >= 0 ? '+' : '') + totalPnl.toFixed(2) + '%'">0.00%</p>
+                            </div>
+                        </div>
+
+                        <!-- API Latency -->
+                        <div class="card overflow-hidden">
+                            <div class="stat-accent bg-blue"></div>
+                            <div class="p-4">
+                                <div class="flex items-center gap-2 mb-3">
+                                    <div class="w-8 h-8 rounded-lg bg-blueBg flex items-center justify-center">
+                                        <i data-lucide="gauge" class="w-4 h-4 text-blue"></i>
+                                    </div>
+                                    <span class="text-[11px] font-medium text-textDim uppercase tracking-wider">API
+                                        Latenz</span>
+                                </div>
+                                <p class="text-2xl font-bold text-textPri font-mono">
+                                    <span x-text="health.latency_ms">—</span><span
+                                        class="text-sm text-textDim ml-1">ms</span>
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Mode -->
+                        <div class="card overflow-hidden">
+                            <div class="stat-accent" :class="health.dry_run === false ? 'bg-amber' : 'bg-blue'"></div>
+                            <div class="p-4">
+                                <div class="flex items-center gap-2 mb-3">
+                                    <div class="w-8 h-8 rounded-lg flex items-center justify-center"
+                                        :class="health.dry_run === false ? 'bg-amberBg' : 'bg-blueBg'">
+                                        <i data-lucide="flask-conical" class="w-4 h-4"
+                                            :class="health.dry_run === false ? 'text-amber' : 'text-blue'"></i>
+                                    </div>
+                                    <span
+                                        class="text-[11px] font-medium text-textDim uppercase tracking-wider">Modus</span>
+                                </div>
+                                <p class="text-lg font-bold"
+                                    :class="health.dry_run === false ? 'text-amber' : 'text-textPri'"
+                                    x-text="health.dry_run === true ? 'Dry-Run' : health.dry_run === false ? 'LIVE' : '—'">
+                                    —</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Trades Table -->
+                    <div class="card">
+                        <div class="flex items-center justify-between px-5 py-4 border-b border-border">
+                            <h2 class="text-sm font-semibold text-textPri">Aktive Positionen</h2>
+                            <span class="badge bg-surface text-textSec" x-text="trades.length + ' Trades'"></span>
+                        </div>
+
+                        <!-- Loading -->
+                        <template x-if="loading && trades.length === 0">
+                            <div class="p-5 space-y-3">
+                                <div class="skeleton h-10 w-full"></div>
+                                <div class="skeleton h-10 w-full"></div>
+                                <div class="skeleton h-10 w-3/4"></div>
+                            </div>
+                        </template>
+
+                        <!-- Empty -->
+                        <template x-if="!loading && trades.length === 0">
+                            <div class="px-5 py-12 text-center">
+                                <div
+                                    class="w-12 h-12 rounded-full bg-surface flex items-center justify-center mx-auto mb-4">
+                                    <i data-lucide="scan-search" class="w-6 h-6 text-textDim"></i>
+                                </div>
+                                <p class="text-sm font-medium text-textSec mb-1">Keine aktiven Trades</p>
+                                <p class="text-xs text-textDim"
+                                    x-text="statusError || 'Der Bot wartet auf das nächste Signal.'"></p>
+                            </div>
+                        </template>
+
+                        <!-- Table -->
+                        <div x-show="trades.length > 0" class="overflow-x-auto">
+                            <table class="tv-table">
+                                <thead>
+                                    <tr>
+                                        <th>Paar</th>
+                                        <th>Einstieg</th>
+                                        <th>Aktuell</th>
+                                        <th>P&L</th>
+                                        <th>Signal</th>
+                                        <th>Seit</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <template x-for="trade in trades" :key="trade.trade_id">
+                                        <tr class="fade-in">
+                                            <!-- Pair -->
+                                            <td>
+                                                <div class="flex items-center gap-3">
+                                                    <div class="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold"
+                                                        :class="trade.profit_pct >= 0 ? 'bg-greenBg text-green' : 'bg-redBg text-red'">
+                                                        <span x-text="trade.pair.split('/')[0].slice(0,3)"></span>
+                                                    </div>
+                                                    <div>
+                                                        <p class="text-sm font-medium text-textPri" x-text="trade.pair">
+                                                        </p>
+                                                        <p class="text-[11px] text-textDim" x-text="trade.timeframe">
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <!-- Entry -->
+                                            <td>
+                                                <span class="font-mono text-textSec text-xs"
+                                                    x-text="trade.open_rate?.toFixed(6) ?? '—'"></span>
+                                            </td>
+                                            <!-- Current -->
+                                            <td>
+                                                <span class="font-mono text-textPri text-xs"
+                                                    x-text="trade.current_rate?.toFixed(6) ?? '—'"></span>
+                                            </td>
+                                            <!-- P&L -->
+                                            <td>
+                                                <div class="badge"
+                                                    :class="trade.profit_pct >= 0 ? 'bg-greenBg text-green' : 'bg-redBg text-red'"
+                                                    x-text="(trade.profit_pct >= 0 ? '+' : '') + (trade.profit_pct * 100).toFixed(2) + '%'">
+                                                </div>
+                                            </td>
+                                            <!-- Signal proximity -->
+                                            <td>
+                                                <div class="flex items-center gap-2 min-w-[100px]">
+                                                    <div class="prog-track flex-1">
+                                                        <div class="prog-fill"
+                                                            :style="'width:' + trade.signal_proximity + '%'"></div>
+                                                    </div>
+                                                    <span class="text-[11px] font-mono text-textDim w-8 text-right"
+                                                        x-text="trade.signal_proximity + '%'"></span>
+                                                </div>
+                                            </td>
+                                            <!-- Date -->
+                                            <td>
+                                                <span class="text-xs text-textDim" x-text="trade.open_date"></span>
+                                            </td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ========== THE MIND (RADAR) ========== -->
+                <section x-show="tab === 'mind'" x-transition class="fade-in">
+
+                    <!-- Scanning Banner -->
+                    <div class="card overflow-hidden relative mb-5">
+                        <div class="scan-sweep" x-show="radarLoading"></div>
+                        <div class="p-4 flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-9 h-9 rounded-lg bg-greenBg flex items-center justify-center">
+                                    <i data-lucide="radar" class="w-5 h-5 text-green"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-semibold text-textPri">
+                                        Scanning <span class="font-mono text-green"
+                                            x-text="radar.pairs_scanned">0</span> Pairs
+                                    </p>
+                                    <p class="text-[11px] text-textDim" x-show="radar.top_target">
+                                        Top Target: <span class="text-amber font-medium"
+                                            x-text="radar.top_target"></span>
+                                        (<span class="font-mono" x-text="radar.top_heat + '%'"></span> Match)
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="badge bg-surface text-textDim text-[10px]">
+                                <i data-lucide="clock" class="w-3 h-3"></i>
+                                <span>Cache 30s</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+                        <!-- LEFT: Heat Grid (all pairs) -->
+                        <div class="lg:col-span-2">
+                            <div class="card">
+                                <div class="flex items-center justify-between px-5 py-3 border-b border-border">
+                                    <h2 class="text-sm font-semibold text-textPri">Whitelist Radar</h2>
+                                    <span class="badge bg-surface text-textDim text-[10px]"
+                                        x-text="radar.targets.length + ' Coins'"></span>
+                                </div>
+
+                                <!-- Loading -->
+                                <template x-if="radarLoading && radar.targets.length === 0">
+                                    <div class="p-5 space-y-2">
+                                        <template x-for="i in 6">
+                                            <div class="skeleton h-8 w-full"></div>
+                                        </template>
+                                    </div>
+                                </template>
+
+                                <!-- Empty -->
+                                <template x-if="!radarLoading && radar.targets.length === 0">
+                                    <div class="p-5 py-10 text-center">
+                                        <i data-lucide="satellite-dish" class="w-8 h-8 text-textDim mx-auto mb-3"></i>
+                                        <p class="text-sm text-textSec">Kein Radar-Signal</p>
+                                        <p class="text-xs text-textDim mt-1">Bot offline oder Whitelist leer.</p>
+                                    </div>
+                                </template>
+
+                                <!-- Pair rows -->
+                                <div x-show="radar.targets.length > 0" class="divide-y divide-[#353535]">
+                                    <template x-for="(t, idx) in radar.targets" :key="t.pair">
+                                        <div
+                                            class="flex items-center gap-3 px-5 py-3 hover:bg-[#353535] transition-colors">
+                                            <!-- Rank -->
+                                            <span class="text-[10px] font-mono w-5 text-textDim text-right"
+                                                x-text="'#' + (idx + 1)"></span>
+                                            <!-- Pair icon -->
+                                            <div class="w-7 h-7 rounded flex items-center justify-center text-[10px] font-bold shrink-0"
+                                                :class="t.heat >= 70 ? 'bg-redBg text-red' : t.heat >= 50 ? 'bg-amberBg text-amber' : 'bg-blueBg text-blue'">
+                                                <span x-text="t.pair.split('/')[0].slice(0,3)"></span>
+                                            </div>
+                                            <!-- Pair name -->
+                                            <span class="text-xs font-medium text-textPri w-24 truncate"
+                                                x-text="t.pair"></span>
+                                            <!-- Heat bar -->
+                                            <div class="flex-1 flex items-center gap-2">
+                                                <div class="heat-bar flex-1">
+                                                    <div class="heat-fill"
+                                                        :class="t.heat >= 70 ? 'heat-hot' : t.heat >= 50 ? 'heat-warm' : 'heat-cold'"
+                                                        :style="'width:' + t.heat + '%'"></div>
+                                                </div>
+                                                <span class="text-[11px] font-mono w-10 text-right"
+                                                    :class="t.heat >= 70 ? 'text-red' : t.heat >= 50 ? 'text-amber' : 'text-textDim'"
+                                                    x-text="t.heat + '%'"></span>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- RIGHT: AI Thoughts (top 5) -->
+                        <div class="space-y-4">
+                            <h2 class="text-sm font-semibold text-textPri flex items-center gap-2">
+                                <i data-lucide="brain" class="w-4 h-4 text-blue"></i>
+                                KI-Analyse (Top 5)
+                            </h2>
+
+                            <!-- Loading -->
+                            <template x-if="mindLoading && thoughts.length === 0">
+                                <div class="space-y-3">
+                                    <template x-for="i in 3">
+                                        <div class="card p-4 space-y-2">
+                                            <div class="skeleton h-4 w-1/2"></div>
+                                            <div class="skeleton h-3 w-full"></div>
+                                        </div>
+                                    </template>
+                                </div>
+                            </template>
+
+                            <!-- Empty -->
+                            <template x-if="!mindLoading && thoughts.length === 0">
+                                <div class="card p-5 text-center">
+                                    <p class="text-xs text-textDim">Warte auf KI-Analyse …</p>
+                                </div>
+                            </template>
+
+                            <!-- Thought cards -->
+                            <template x-for="(thought, idx) in thoughts" :key="idx">
+                                <div class="card p-4 fade-in">
+                                    <div class="flex items-center gap-2 mb-3">
+                                        <div class="w-6 h-6 rounded flex items-center justify-center text-[9px] font-bold"
+                                            :class="thought.type === 'trade' ? 'bg-greenBg text-green' : thought.type === 'radar' ? 'bg-amberBg text-amber' : 'bg-blueBg text-blue'">
+                                            <span
+                                                x-text="thought.pair === 'System' ? '⚡' : thought.pair.split('/')[0].slice(0,3)"></span>
+                                        </div>
+                                        <p class="text-xs font-semibold text-textPri" x-text="thought.pair"></p>
+                                        <template x-if="thought.heat">
+                                            <span class="badge text-[9px] ml-auto"
+                                                :class="thought.heat >= 70 ? 'bg-redBg text-red' : 'bg-amberBg text-amber'"
+                                                x-text="thought.heat + '% Match'"></span>
+                                        </template>
+                                        <template x-if="thought.type === 'trade'">
+                                            <span class="badge text-[9px] bg-greenBg text-green ml-auto">Active
+                                                Trade</span>
+                                        </template>
+                                    </div>
+                                    <div class="space-y-1">
+                                        <template x-for="(s, si) in thought.sentences" :key="si">
+                                            <div class="thought-line">
+                                                <p class="text-[12px] text-textSec leading-relaxed" x-text="s"></p>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ========== QUICK HEALTH ========== -->
+                <section x-show="tab === 'health'" x-transition class="fade-in">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-4xl">
+
+                        <!-- Bot Status -->
+                        <div class="card p-5">
+                            <div class="flex items-center gap-3 mb-5">
+                                <div class="w-10 h-10 rounded-lg flex items-center justify-center"
+                                    :class="health.bot_online ? 'bg-greenBg' : 'bg-redBg'">
+                                    <i data-lucide="server" class="w-5 h-5"
+                                        :class="health.bot_online ? 'text-green' : 'text-red'"></i>
+                                </div>
+                                <div>
+                                    <p class="text-[11px] text-textDim uppercase tracking-wider font-medium">Bot Status
+                                    </p>
+                                    <p class="text-sm font-semibold"
+                                        :class="health.bot_online ? 'text-green' : 'text-red'"
+                                        x-text="health.bot_online ? 'Online' : 'Offline'"></p>
+                                </div>
+                            </div>
+                            <div class="space-y-3 text-xs">
+                                <div class="flex justify-between">
+                                    <span class="text-textDim">State</span>
+                                    <span class="font-mono text-textSec" x-text="health.state"></span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-textDim">Strategie</span>
+                                    <span class="font-mono text-textSec truncate max-w-[140px]"
+                                        x-text="health.strategy"></span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-textDim">Version</span>
+                                    <span class="font-mono text-textSec" x-text="health.version"></span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-textDim">Exchange</span>
+                                    <span class="font-mono text-textSec" x-text="health.exchange"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Latency -->
+                        <div class="card p-5">
+                            <div class="flex items-center gap-3 mb-5">
+                                <div class="w-10 h-10 rounded-lg bg-blueBg flex items-center justify-center">
+                                    <i data-lucide="gauge" class="w-5 h-5 text-blue"></i>
+                                </div>
+                                <div>
+                                    <p class="text-[11px] text-textDim uppercase tracking-wider font-medium">API Latenz
+                                    </p>
+                                    <p class="text-sm font-semibold text-textPri">
+                                        <span class="font-mono" x-text="health.latency_ms"></span>
+                                        <span class="text-textDim font-normal"> ms</span>
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="space-y-3 text-xs">
+                                <div class="flex justify-between">
+                                    <span class="text-textDim">Qualität</span>
+                                    <span class="badge text-[10px]"
+                                        :class="health.latency_ms < 100 ? 'bg-greenBg text-green' : health.latency_ms < 500 ? 'bg-amberBg text-amber' : 'bg-redBg text-red'"
+                                        x-text="health.latency_ms < 100 ? 'Exzellent' : health.latency_ms < 500 ? 'Gut' : 'Langsam'"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Mode -->
+                        <div class="card p-5">
+                            <div class="flex items-center gap-3 mb-5">
+                                <div class="w-10 h-10 rounded-lg flex items-center justify-center"
+                                    :class="health.dry_run === true ? 'bg-amberBg' : health.dry_run === false ? 'bg-greenBg' : 'bg-surface'">
+                                    <i data-lucide="flask-conical" class="w-5 h-5"
+                                        :class="health.dry_run === true ? 'text-amber' : health.dry_run === false ? 'text-green' : 'text-textDim'"></i>
+                                </div>
+                                <div>
+                                    <p class="text-[11px] text-textDim uppercase tracking-wider font-medium">Modus</p>
+                                    <p class="text-sm font-semibold"
+                                        :class="health.dry_run === true ? 'text-amber' : health.dry_run === false ? 'text-green' : 'text-textSec'"
+                                        x-text="health.dry_run === true ? 'Dry-Run' : health.dry_run === false ? 'LIVE Trading' : 'Unbekannt'">
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="space-y-3 text-xs">
+                                <div class="flex justify-between">
+                                    <span class="text-textDim">Info</span>
+                                    <span class="text-textSec font-mono"
+                                        x-text="health.dry_run === true ? 'Simuliert' : health.dry_run === false ? 'Echtes Geld!' : '—'"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+            </main>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- APP JS -->
+    <!-- ============================================================ -->
+    <script>
+        function app() {
+            return {
+                tab: 'focus',
+                sidebarOpen: false,
+                loading: true,
+                mindLoading: true,
+                botOnline: false,
+                statusError: null,
+
+                trades: [],
+                thoughts: [],
+                radar: { pairs_scanned: 0, targets: [], top_target: null, top_heat: 0 },
+                radarLoading: true,
+                health: {
+                    bot_online: false,
+                    latency_ms: 0,
+                    dry_run: null,
+                    state: '—',
+                    strategy: '—',
+                    exchange: '—',
+                    version: '—',
+                },
+
+                _si: null, _mi: null, _hi: null, _ri: null,
+
+                get totalPnl() {
+                    if (!this.trades.length) return 0;
+                    return this.trades.reduce((s, t) => s + (t.profit_pct || 0), 0) * 100;
+                },
+
+                init() {
+                    this.fetchStatus();
+                    this.fetchMind();
+                    this.fetchHealth();
+                    this.fetchRadar();
+                    this.startPolling();
+
+                    document.addEventListener('visibilitychange', () => {
+                        if (document.visibilityState === 'visible') {
+                            this.fetchStatus();
+                            this.fetchMind();
+                            this.fetchHealth();
+                            this.fetchRadar();
+                            this.startPolling();
+                        } else {
+                            this.stopPolling();
+                        }
+                    });
+
+                    this.$nextTick(() => lucide.createIcons());
+                    for (const key of ['tab', 'trades', 'thoughts', 'health', 'radar']) {
+                        this.$watch(key, () => this.$nextTick(() => lucide.createIcons()));
+                    }
+                },
+
+                startPolling() {
+                    this.stopPolling();
+                    this._si = setInterval(() => this.fetchStatus(), 5000);
+                    this._mi = setInterval(() => this.fetchMind(), 30000);
+                    this._hi = setInterval(() => this.fetchHealth(), 10000);
+                    this._ri = setInterval(() => this.fetchRadar(), 30000);
+                },
+                stopPolling() {
+                    clearInterval(this._si);
+                    clearInterval(this._mi);
+                    clearInterval(this._hi);
+                    clearInterval(this._ri);
+                },
+
+                async fetchStatus() {
+                    try {
+                        const r = await fetch('/api/proxy/status');
+                        const d = await r.json();
+                        this.trades = d.trades || [];
+                        this.statusError = d.error || null;
+                        this.loading = false;
+                    } catch { this.statusError = 'Netzwerkfehler'; this.loading = false; }
+                },
+                async fetchMind() {
+                    try {
+                        const r = await fetch('/api/proxy/mind');
+                        const d = await r.json();
+                        this.thoughts = d.thoughts || [];
+                        this.mindLoading = false;
+                    } catch { this.mindLoading = false; }
+                },
+                async fetchRadar() {
+                    try {
+                        const r = await fetch('/api/proxy/radar');
+                        const d = await r.json();
+                        this.radar = {
+                            pairs_scanned: d.pairs_scanned ?? 0,
+                            targets: d.targets ?? [],
+                            top_target: d.top_target ?? null,
+                            top_heat: d.top_heat ?? 0,
+                        };
+                        this.radarLoading = false;
+                    } catch { this.radarLoading = false; }
+                },
+                async fetchHealth() {
+                    try {
+                        const r = await fetch('/api/proxy/health');
+                        const d = await r.json();
+                        this.health = {
+                            bot_online: d.bot_online ?? false,
+                            latency_ms: d.latency_ms ?? 0,
+                            dry_run: d.dry_run,
+                            state: d.state ?? '—',
+                            strategy: d.strategy ?? '—',
+                            exchange: d.exchange ?? '—',
+                            version: d.version ?? '—',
+                        };
+                        this.botOnline = d.bot_online ?? false;
+                    } catch { this.botOnline = false; }
+                },
+            };
+        }
+    </script>
+</body>
+
+</html>

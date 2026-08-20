@@ -1,0 +1,30 @@
+version: "3.8"
+
+services:
+  trading-vision:
+    build: .
+    container_name: trading-vision
+    restart: unless-stopped
+    ports:
+      - "8501:8501"
+    environment:
+      # ── Point this to your Freqtrade bot ──────────────────────
+      # If Freqtrade runs in the same Docker network, use the
+      # container name, e.g.  http://freqtrade:8080
+      - FREQTRADE_API_URL=http://freqtrade:8080
+      - FREQTRADE_API_USERNAME=freqtrader
+      - FREQTRADE_API_PASSWORD=Nailuj18@NESA08
+    networks:
+      - ft_network
+    # Resource limits — keeps RAM usage minimal
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+
+networks:
+  ft_network:
+    # If your Freqtrade bot already has a network, use "external: true"
+    # and set the correct name. Otherwise this creates a new shared network.
+    external: true
+    name: freqtrade_default  # ← adjust to your actual network name
